@@ -1,8 +1,14 @@
 package test.book.glass.auth;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
+import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -18,16 +24,39 @@ import com.google.api.client.util.store.DataStore;
 
 public final class AuthUtils
 {
-// START:configs
   public static final List<String> SCOPES = Arrays.asList(
     "https://www.googleapis.com/auth/userinfo.profile",
     "https://www.googleapis.com/auth/glass.timeline"
   );
-  public static final String WEB_CLIENT_ID =
-      "[MY_NUMBER].apps.googleusercontent.com";
-  public static final String WEB_CLIENT_SECRET = "[MY_SECRET_KEY]";
   public static final String OAUTH2_PATH = "/oauth2callback";
-// END:configs
+  private static final Logger LOG = Logger.getLogger(AuthUtils.class.getSimpleName());
+
+  // setup ids
+  public static final String WEB_CLIENT_ID;
+  public static final String WEB_CLIENT_SECRET;
+  public static final String API_KEY;
+  static {
+    URL resource = AuthUtils.class.getResource("/oauth.properties");
+    File propertiesFile = new File("./src/oauth.properties");
+    try {
+      propertiesFile = new File(resource.toURI());
+      LOG.info("Able to find oauth properties from file.");
+    } catch (URISyntaxException e) {
+      LOG.info(e.toString());
+      LOG.info("Using default source path.");
+    }
+    Properties authProperties = null;
+    try {
+      FileInputStream authPropertiesStream = new FileInputStream(propertiesFile);
+      authProperties = new Properties();
+      authProperties.load(authPropertiesStream);
+    } catch(IOException e) {
+      e.printStackTrace();
+    }
+    WEB_CLIENT_ID = authProperties.getProperty("client_id");
+    WEB_CLIENT_SECRET = authProperties.getProperty("client_secret");
+    API_KEY = authProperties.getProperty("api_key");
+  }
 
   public static Credential getCredential(String userId) throws IOException {
     return userId == null ? null : buildCodeFlow().loadCredential( userId );
